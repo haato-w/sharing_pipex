@@ -6,7 +6,7 @@
 /*   By: haatwata <haatwata@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/05 19:24:54 by haatwata          #+#    #+#             */
-/*   Updated: 2025/07/05 22:31:00 by haatwata         ###   ########.fr       */
+/*   Updated: 2025/07/08 20:27:42 by haatwata         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,44 +71,43 @@ static int	create_pipe(int *read, int *write, t_internal_vars *internal, int pre
 	return (EXIT_SUCCESS);
 }
 
-static void	final_process(t_input_vars *input, t_internal_vars *internal, int prev_fd)
-{
-	size_t	i;
-
-	close(prev_fd);
-	close(internal->outfile);
-	i = 0;
-	while (i < input->cmd_num)
-	{
-		wait(NULL);
-		i++;
-	}
-	free_2arrays(internal->paths);
-}
-
 int	pipex(t_input_vars *input)
 {
 	t_internal_vars	internal;
 	int							prev_fd;
 	int							pipe_fd[2];
-	size_t					i;
+	size_t					idx;
 
+	// Initial process that prepare data resources
 	if (init_io_fd(input, &internal) == EXIT_FAILURE)
 		return (EXIT_FAILURE);
 	internal.paths = get_path(input->envp);
-	i = 0;
+	
+	// Main loop that exexute each commands
+	idx = 0;
 	prev_fd = internal.infile;
-	while (i < input->cmd_num)
+	while (idx < input->cmd_num)
 	{
 		if (create_pipe(&pipe_fd[0], &pipe_fd[1], &internal, prev_fd))
 			return (EXIT_FAILURE);
 		if (create_fork(&internal, prev_fd) == 0) // child
-			execute_process(i, pipe_fd, prev_fd, input, &internal);
+			execute_process(idx, pipe_fd, prev_fd, input, &internal);
 		close(pipe_fd[1]);
 		close(prev_fd);
 		prev_fd = pipe_fd[0];
-		i++;
+		idx++;
 	}
-	final_process(input, &internal, prev_fd);
+	
+	// Final process that clean data resources
+	close(prev_fd);
+	close(internal.outfile);
+	idx = 0;
+	while (idx < input->cmd_num)
+	{
+		wait(NULL); // Waiting for the ends of all child processes
+		idx++;
+	}
+	free_2arrays(internal.paths);
+	
 	return (EXIT_SUCCESS);
 }
