@@ -6,7 +6,7 @@
 /*   By: haatwata <haatwata@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/07 18:33:26 by haatwata          #+#    #+#             */
-/*   Updated: 2025/02/08 22:20:07 by haatwata         ###   ########.fr       */
+/*   Updated: 2025/07/08 20:26:29 by haatwata         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,9 @@
 #  define BUFFER_SIZE 42
 # endif
 
-# define OPEN_MAX 1000
+#	ifndef OPEN_MAX
+#  define OPEN_MAX 1000
+# endif
 
 typedef struct s_file
 {
