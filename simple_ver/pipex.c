@@ -6,16 +6,21 @@
 /*   By: haatwata <haatwata@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/05 19:24:54 by haatwata          #+#    #+#             */
-/*   Updated: 2025/07/08 20:27:42 by haatwata         ###   ########.fr       */
+/*   Updated: 2025/07/08 20:39:15 by haatwata         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex.h"
 
+/*
+This function prepare input file discriptor.
+*/
 static int	init_infile_fd(t_input_vars *input)
 {
 	int fd;
 
+	// Here Document is implemented here. But I suppose that you don't need to understand
+	// all of here_doc code. Ordinary input file situation is much important.
 	if (input->here_doc)
 	{
 		fd = here_doc_fd(input->limiter);
@@ -24,6 +29,7 @@ static int	init_infile_fd(t_input_vars *input)
 	}
 	else
 	{
+		// Ordinary input file situation is here.
 		fd = open(input->in, O_RDONLY);
 		if (fd < 0)
 			perror(input->in);
@@ -31,6 +37,9 @@ static int	init_infile_fd(t_input_vars *input)
 	return (fd);
 }
 
+/*
+This function prepare input and output file discriptor.
+*/
 static int	init_io_fd(t_input_vars *input, t_internal_vars *internal)
 {
 	internal->infile = init_infile_fd(input);
@@ -53,6 +62,9 @@ static int	init_io_fd(t_input_vars *input, t_internal_vars *internal)
 	return (EXIT_SUCCESS);
 }
 
+/*
+This function create "pipe" which is a buffer on memory to share data between different processes.
+*/
 static int	create_pipe(int *read, int *write, t_internal_vars *internal, int prev_fd)
 {
 	int	pipe_fd[2];
@@ -71,12 +83,25 @@ static int	create_pipe(int *read, int *write, t_internal_vars *internal, int pre
 	return (EXIT_SUCCESS);
 }
 
+/*
+This function is for error of "fork" function. You don't need to take care about this.
+*/
+void fork_error(t_internal_vars *internal, int prev_fd)
+{
+	perror("fork");
+	if (prev_fd != internal->infile)
+		close(prev_fd);
+	close(internal->infile);
+	close(internal->outfile);
+}
+
 int	pipex(t_input_vars *input)
 {
 	t_internal_vars	internal;
 	int							prev_fd;
 	int							pipe_fd[2];
 	size_t					idx;
+	pid_t						pid;
 
 	// Initial process that prepare data resources
 	if (init_io_fd(input, &internal) == EXIT_FAILURE)
@@ -90,8 +115,13 @@ int	pipex(t_input_vars *input)
 	{
 		if (create_pipe(&pipe_fd[0], &pipe_fd[1], &internal, prev_fd))
 			return (EXIT_FAILURE);
-		if (create_fork(&internal, prev_fd) == 0) // child
+
+		pid = fork();
+		if (pid == -1) // fork error
+			fork_error(&internal, prev_fd);
+		if (pid == 0) // child process
 			execute_process(idx, pipe_fd, prev_fd, input, &internal);
+		// parent process
 		close(pipe_fd[1]);
 		close(prev_fd);
 		prev_fd = pipe_fd[0];

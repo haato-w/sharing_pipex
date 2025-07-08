@@ -6,7 +6,7 @@
 /*   By: haatwata <haatwata@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/05 22:29:45 by haatwata          #+#    #+#             */
-/*   Updated: 2025/07/05 22:33:56 by haatwata         ###   ########.fr       */
+/*   Updated: 2025/07/08 20:41:41 by haatwata         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,25 +88,10 @@ static void	execute_cmd(char *cmd, int input_fd, int output_fd, char **env_path,
 
 void	execute_process(size_t idx, int *pipe_fd, int prev_fd, t_input_vars *input, t_internal_vars *internal)
 {
+	// The file discriptor for reading of pipe isn't needed by child process because reading is executed on prev_fd.
 	close(pipe_fd[0]);
 	if (idx != input->cmd_num - 1)
 		execute_cmd(input->cmds[idx], prev_fd, pipe_fd[1], internal->paths, input->envp);
 	else
 		execute_cmd(input->cmds[idx], prev_fd, internal->outfile, internal->paths, input->envp);
-}
-
-pid_t	create_fork(t_internal_vars *internal, int prev_fd)
-{
-	pid_t	pid;
-
-	pid = fork();
-	if (pid == -1)
-	{
-		perror("fork");
-		if (prev_fd != internal->infile)
-			close(prev_fd);
-		close(internal->infile);
-		close(internal->outfile);
-	}
-	return (pid);
 }
